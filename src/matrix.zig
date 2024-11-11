@@ -51,7 +51,10 @@ pub fn Matrix(comptime T: type) type {
             @memset(self.values, fill_value);
         }
 
-        pub fn set(self: *Self, values: *[]T) void {
+        pub fn set(self: *Self, values: []T) MatrixError!void {
+            if (self.values.len != values.len) {
+                return MatrixError.MissMatchShape;
+            }
             @memcpy(self.values, values);
         }
 

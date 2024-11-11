@@ -166,3 +166,49 @@ void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, u
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
 }
+
+const char* cl_matrix_scale = "\
+__kernel void scale(float scale, __global const float *a) { \
+    int i = get_global_id(0); \
+    a[i] *= scale; \
+}";
+
+void matrix_scale(float scale, const float* a, const float* b, unsigned int n) {
+    int bytes_len = n * sizeof(float);
+
+    cl_platform_id platform;
+    clGetPlatformIDs(1, &platform, NULL);
+
+    cl_device_id device;
+    clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+
+    cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, NULL);
+
+    cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, 0, NULL);
+
+    cl_mem bufferA = clCreateBuffer(context, CL_MEM_READ_ONLY, bytes_len, NULL, NULL);
+    cl_mem bufferB = clCreateBuffer(context, CL_MEM_WRITE_ONLY, bytes_len, NULL, NULL);
+
+    clEnqueueWriteBuffer(queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
+
+    cl_program program = clCreateProgramWithSource(context, 1, &cl_matrix_sub, NULL, NULL);
+    clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+
+    cl_kernel kernel = clCreateKernel(program, "sub", NULL);
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
+
+    size_t globalSize = n;
+    clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
+
+    clEnqueueReadBuffer(queue, bufferB, CL_TRUE, 0, bytes_len, c, 0, NULL, NULL);
+
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseMemObject(bufferA);
+    clReleaseMemObject(bufferB);
+    clReleaseMemObject(bufferC);
+    clReleaseCommandQueue(queue);
+    clReleaseContext(context);
+}

@@ -21,3 +21,9 @@ void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, u
         }
     }
 }
+
+void matrix_scale(float scale, const float* a, const float* b, unsigned int n) {
+    for (int i = 0; i < n; ++i) {
+        b[i] = a[i] * scale;
+    }
+}
