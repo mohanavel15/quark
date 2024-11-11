@@ -17,7 +17,7 @@ pub fn Add(allocator: Allocator, a: Matrix(f32), b: Matrix(f32)) MatrixError!Mat
         return MatrixError.FailAlloc;
     };
 
-    matrix_add(a.values.ptr, b.values.ptr, result.values.ptr, a.values.len);
+    matrix_add(a.values.ptr, b.values.ptr, result.values.ptr, a.rows * a.cols);
 
     return result;
 }
@@ -31,7 +31,7 @@ pub fn Subtract(allocator: Allocator, a: Matrix(f32), b: Matrix(f32)) MatrixErro
         return MatrixError.FailAlloc;
     };
 
-    matrix_sub(a.values.ptr, b.values.ptr, result.values.ptr, a.values.len);
+    matrix_sub(a.values.ptr, b.values.ptr, result.values.ptr, a.rows * a.cols);
 
     return result;
 }
@@ -55,7 +55,7 @@ pub fn Scale(allocator: Allocator, a: Matrix(f32), scale: f32) MatrixError!Matri
         return MatrixError.FailAlloc;
     };
 
-    matrix_scale(scale, a.values.ptr, result.ptr, a.values.len);
+    matrix_scale(scale, a.values.ptr, result.values.ptr, a.rows * a.cols);
 
     return result;
 }

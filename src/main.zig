@@ -32,11 +32,15 @@ pub fn main() !void {
     defer c.deinit();
     c.print();
 
-    var d = try MatrixOps.Sub(allocator, a, b);
+    var d = try MatrixOps.Subtract(allocator, a, b);
     defer d.deinit();
     d.print();
 
-    var e = try MatrixOps.Mul(allocator, a, b);
+    var e = try MatrixOps.Multiply(allocator, a, b);
     defer e.deinit();
     e.print();
+
+    var f = try MatrixOps.Scale(allocator, a, 20);
+    defer f.deinit();
+    f.print();
 }

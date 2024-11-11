@@ -154,7 +154,7 @@ void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, u
     clSetKernelArg(kernel, 4, sizeof(unsigned int), &b_cols);
     
     size_t globalSize[2] = {a_rows, b_cols};
-    clEnqueueNDRangeKernel(queue, kernel, 2, NULL, &globalSize, NULL, 0, NULL, NULL);
+    clEnqueueNDRangeKernel(queue, kernel, 2, NULL, globalSize, NULL, 0, NULL, NULL);
 
     clEnqueueReadBuffer(queue, buf_c, CL_TRUE, 0, len_c, c, 0, NULL, NULL);
 
@@ -168,12 +168,12 @@ void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, u
 }
 
 const char* cl_matrix_scale = "\
-__kernel void scale(float scale, __global const float *a) { \
+__kernel void scale(float scale, __global const float *a, __global float *c) { \
     int i = get_global_id(0); \
-    a[i] *= scale; \
+    b[i] = a[i] * scale; \
 }";
 
-void matrix_scale(float scale, const float* a, const float* b, unsigned int n) {
+void matrix_scale(float scale, const float* a, float* b, unsigned int n) {
     int bytes_len = n * sizeof(float);
 
     cl_platform_id platform;
@@ -194,7 +194,7 @@ void matrix_scale(float scale, const float* a, const float* b, unsigned int n) {
     cl_program program = clCreateProgramWithSource(context, 1, &cl_matrix_sub, NULL, NULL);
     clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 
-    cl_kernel kernel = clCreateKernel(program, "sub", NULL);
+    cl_kernel kernel = clCreateKernel(program, "scale", NULL);
 
     clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
@@ -202,13 +202,12 @@ void matrix_scale(float scale, const float* a, const float* b, unsigned int n) {
     size_t globalSize = n;
     clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
 
-    clEnqueueReadBuffer(queue, bufferB, CL_TRUE, 0, bytes_len, c, 0, NULL, NULL);
+    clEnqueueReadBuffer(queue, bufferB, CL_TRUE, 0, bytes_len, b, 0, NULL, NULL);
 
     clReleaseKernel(kernel);
     clReleaseProgram(program);
     clReleaseMemObject(bufferA);
     clReleaseMemObject(bufferB);
-    clReleaseMemObject(bufferC);
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
 }
