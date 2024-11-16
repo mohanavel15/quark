@@ -1,8 +1,12 @@
 const std = @import("std");
 const Matrix = @import("matrix.zig").Matrix;
 const MatrixOps = @import("matrix_ops.zig");
+const Backend = @import("backend.zig");
 
 pub fn main() !void {
+    var backend = Backend.Init();
+    defer backend.Deinit();
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
         switch (gpa.deinit()) {

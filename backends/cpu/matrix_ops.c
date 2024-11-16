@@ -1,16 +1,18 @@
-void matrix_add(const float* a, const float* b, float* c, unsigned int n) {
+#include "backend.h"
+
+void matrix_add(void* context, const float* a, const float* b, float* c, unsigned int n) {
     for (int i = 0; i < n; ++i) {
         c[i] = a[i] + b[i];
     }
 }
 
-void matrix_sub(const float* a, const float* b, float* c, unsigned int n) {
+void matrix_sub(void* context, const float* a, const float* b, float* c, unsigned int n) {
     for (int i = 0; i < n; ++i) {
         c[i] = a[i] - b[i];
     }
 }
 
-void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, unsigned int a_cols, unsigned int b_rows, unsigned int b_cols) {
+void matrix_mul(void* context, const float* a, const float* b, float* c, unsigned int a_rows, unsigned int a_cols, unsigned int b_rows, unsigned int b_cols) {
     for (int i = 0; i < a_rows; ++i) {
         for (int j = 0; j < b_cols; ++j) {
             float sum = 0;
@@ -22,7 +24,7 @@ void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, u
     }
 }
 
-void matrix_scale(float scale, const float* a, float* b, unsigned int n) {
+void matrix_scale(void* context, float scale, const float* a, float* b, unsigned int n) {
     for (int i = 0; i < n; ++i) {
         b[i] = a[i] * scale;
     }
