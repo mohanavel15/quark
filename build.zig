@@ -25,8 +25,10 @@ pub fn build(b: *std.Build) void {
     if (opencl) {
         exe.linkLibC(); // Seems to need it.
         exe.linkSystemLibrary("OpenCL");
+        exe.addIncludePath(b.path("backends/opencl/backend.h"));
         exe.addCSourceFile(.{ .file = b.path("backends/opencl/matrix_ops.c"), .flags = &.{} });
     } else {
+        exe.addIncludePath(b.path("backends/cpu/backend.h"));
         exe.addCSourceFile(.{ .file = b.path("backends/cpu/matrix_ops.c"), .flags = &.{} });
     }
 
