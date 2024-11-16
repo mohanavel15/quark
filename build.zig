@@ -23,6 +23,7 @@ pub fn build(b: *std.Build) void {
     });
 
     if (opencl) {
+        exe.linkLibC(); // Seems to need it.
         exe.linkSystemLibrary("OpenCL");
         exe.addCSourceFile(.{ .file = b.path("backends/opencl/matrix_ops.c"), .flags = &.{} });
     } else {

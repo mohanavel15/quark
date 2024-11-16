@@ -168,7 +168,7 @@ void matrix_mul(const float* a, const float* b, float* c, unsigned int a_rows, u
 }
 
 const char* cl_matrix_scale = "\
-__kernel void scale(float scale, __global const float *a, __global float *c) { \
+__kernel void scale(float scale, __global const float *a, __global float *b) { \
     int i = get_global_id(0); \
     b[i] = a[i] * scale; \
 }";
@@ -191,13 +191,14 @@ void matrix_scale(float scale, const float* a, float* b, unsigned int n) {
 
     clEnqueueWriteBuffer(queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
 
-    cl_program program = clCreateProgramWithSource(context, 1, &cl_matrix_sub, NULL, NULL);
+    cl_program program = clCreateProgramWithSource(context, 1, &cl_matrix_scale, NULL, NULL);
     clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 
     cl_kernel kernel = clCreateKernel(program, "scale", NULL);
 
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
+    clSetKernelArg(kernel, 0, sizeof(float), &scale);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferA);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufferB);
 
     size_t globalSize = n;
     clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
