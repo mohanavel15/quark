@@ -9,18 +9,17 @@ Following code is not great and can be improved.
 */
 
 const char* cl_matrix_add = "\
-__kernel void add(__global const float *a, __global const float *b, __global float *c) { \
+__kernel void add(__global float *a, __global const float *b) { \
     int i = get_global_id(0); \
-    c[i] = a[i] + b[i]; \
+    a[i] += b[i]; \
 }";
 
-void matrix_add(void* context, const float* a, const float* b, float* c, unsigned int n) {
+void matrix_add(void* context, float* a, const float* b, unsigned int n) {
     Context* ctx = (Context*)context;
     int bytes_len = n * sizeof(float);
 
-    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_ONLY, bytes_len, NULL, NULL);
+    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_WRITE, bytes_len, NULL, NULL);
     cl_mem bufferB = clCreateBuffer(ctx->context, CL_MEM_READ_ONLY, bytes_len, NULL, NULL);
-    cl_mem bufferC = clCreateBuffer(ctx->context, CL_MEM_WRITE_ONLY, bytes_len, NULL, NULL);
 
     clEnqueueWriteBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
     clEnqueueWriteBuffer(ctx->queue, bufferB, CL_TRUE, 0, bytes_len, b, 0, NULL, NULL);
@@ -32,32 +31,29 @@ void matrix_add(void* context, const float* a, const float* b, float* c, unsigne
 
     clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufferC);
 
     size_t globalSize = n;
     clEnqueueNDRangeKernel(ctx->queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
-    clEnqueueReadBuffer(ctx->queue, bufferC, CL_TRUE, 0, bytes_len, c, 0, NULL, NULL);
+    clEnqueueReadBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
 
     clReleaseKernel(kernel);
     clReleaseProgram(program);
     clReleaseMemObject(bufferA);
     clReleaseMemObject(bufferB);
-    clReleaseMemObject(bufferC);
 }
 
 const char* cl_matrix_sub = "\
-__kernel void sub(__global const float *a, __global const float *b, __global float *c) { \
+__kernel void sub(__global float *a, __global const float *b) { \
     int i = get_global_id(0); \
-    c[i] = a[i] - b[i]; \
+    a[i] -= b[i]; \
 }";
 
-void matrix_sub(void* context, const float* a, const float* b, float* c, unsigned int n) {
+void matrix_sub(void* context, float* a, const float* b, unsigned int n) {
     Context* ctx = (Context*)context;
     int bytes_len = n * sizeof(float);
 
-    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_ONLY, bytes_len, NULL, NULL);
+    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_WRITE, bytes_len, NULL, NULL);
     cl_mem bufferB = clCreateBuffer(ctx->context, CL_MEM_READ_ONLY, bytes_len, NULL, NULL);
-    cl_mem bufferC = clCreateBuffer(ctx->context, CL_MEM_WRITE_ONLY, bytes_len, NULL, NULL);
 
     clEnqueueWriteBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
     clEnqueueWriteBuffer(ctx->queue, bufferB, CL_TRUE, 0, bytes_len, b, 0, NULL, NULL);
@@ -69,18 +65,16 @@ void matrix_sub(void* context, const float* a, const float* b, float* c, unsigne
 
     clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufferC);
 
     size_t globalSize = n;
     clEnqueueNDRangeKernel(ctx->queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
 
-    clEnqueueReadBuffer(ctx->queue, bufferC, CL_TRUE, 0, bytes_len, c, 0, NULL, NULL);
+    clEnqueueReadBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
 
     clReleaseKernel(kernel);
     clReleaseProgram(program);
     clReleaseMemObject(bufferA);
     clReleaseMemObject(bufferB);
-    clReleaseMemObject(bufferC);
 }
 
 const char* cl_matrix_mul = "\
@@ -136,17 +130,16 @@ void matrix_mul(void* context, const float* a, const float* b, float* c, unsigne
 }
 
 const char* cl_matrix_scale = "\
-__kernel void scale(float scale, __global const float *a, __global float *b) { \
+__kernel void scale(float scale, __global float *a) { \
     int i = get_global_id(0); \
-    b[i] = a[i] * scale; \
+    a[i] *= scale; \
 }";
 
-void matrix_scale(void* context, float scale, const float* a, float* b, unsigned int n) {
+void matrix_scale(void* context, float scale, float* a, unsigned int n) {
     Context* ctx = (Context*)context;
     int bytes_len = n * sizeof(float);
 
-    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_ONLY, bytes_len, NULL, NULL);
-    cl_mem bufferB = clCreateBuffer(ctx->context, CL_MEM_WRITE_ONLY, bytes_len, NULL, NULL);
+    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_WRITE, bytes_len, NULL, NULL);
 
     clEnqueueWriteBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
 
@@ -157,15 +150,13 @@ void matrix_scale(void* context, float scale, const float* a, float* b, unsigned
 
     clSetKernelArg(kernel, 0, sizeof(float), &scale);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferA);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufferB);
 
     size_t globalSize = n;
     clEnqueueNDRangeKernel(ctx->queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
 
-    clEnqueueReadBuffer(ctx->queue, bufferB, CL_TRUE, 0, bytes_len, b, 0, NULL, NULL);
+    clEnqueueReadBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
 
     clReleaseKernel(kernel);
     clReleaseProgram(program);
     clReleaseMemObject(bufferA);
-    clReleaseMemObject(bufferB);
 }

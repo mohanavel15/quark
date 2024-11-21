@@ -1,14 +1,14 @@
 #include "backend.h"
 
-void matrix_add(void* context, const float* a, const float* b, float* c, unsigned int n) {
+void matrix_add(void* context, float* a, const float* b, unsigned int n) {
     for (int i = 0; i < n; ++i) {
-        c[i] = a[i] + b[i];
+        a[i] += b[i];
     }
 }
 
-void matrix_sub(void* context, const float* a, const float* b, float* c, unsigned int n) {
+void matrix_sub(void* context, float* a, const float* b, unsigned int n) {
     for (int i = 0; i < n; ++i) {
-        c[i] = a[i] - b[i];
+        a[i] -= b[i];
     }
 }
 
@@ -24,8 +24,8 @@ void matrix_mul(void* context, const float* a, const float* b, float* c, unsigne
     }
 }
 
-void matrix_scale(void* context, float scale, const float* a, float* b, unsigned int n) {
+void matrix_scale(void* context, float scale, float* a, unsigned int n) {
     for (int i = 0; i < n; ++i) {
-        b[i] = a[i] * scale;
+        a[i] *= scale;
     }
 }
