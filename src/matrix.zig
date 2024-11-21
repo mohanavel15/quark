@@ -1,5 +1,11 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const backend = @import("backend.zig");
+
+extern fn matrix_add(context: *anyopaque, a: [*]const f32, b: [*]const f32, n: c_uint) void;
+extern fn matrix_sub(context: *anyopaque, a: [*]const f32, b: [*]const f32, n: c_uint) void;
+extern fn matrix_mul(context: *anyopaque, a: [*]const f32, b: [*]const f32, c: [*]const f32, a_rows: c_uint, a_cols: c_uint, b_rows: c_uint, b_cols: c_uint) void;
+extern fn matrix_scale(context: *anyopaque, scale: f32, a: [*]const f32, n: c_uint) void;
 
 pub const MatrixError = error{
     FailAlloc,
@@ -67,9 +73,40 @@ pub fn Matrix(comptime T: type) type {
         }
 
         pub fn scale(self: *Self, scalar: T) void {
-            for (0..self.size()) |idx| {
-                self.values[idx] = self.values[idx] * scalar;
+            const ctx = backend.GetInstance();
+            matrix_scale(ctx.context, scalar, self.values.ptr, @intCast(self.size()));
+        }
+
+        pub fn add(self: *Self, mat: *Self) !void {
+            if (self.rows != mat.rows or self.cols != mat.cols) {
+                return MatrixError.MissMatchShape;
             }
+
+            const ctx = backend.GetInstance();
+            matrix_add(ctx.context, self.values.ptr, mat.values.ptr, @intCast(self.size()));
+        }
+
+        pub fn subtract(self: *Self, mat: *Self) !void {
+            if (self.rows != mat.rows or self.cols != mat.cols) {
+                return MatrixError.MissMatchShape;
+            }
+
+            const ctx = backend.GetInstance();
+            matrix_sub(ctx.context, self.values.ptr, mat.values.ptr, @intCast(self.size()));
+        }
+
+        pub fn multiply(self: *Self, mat: *Self) !void {
+            if (self.cols != mat.rows) {
+                return MatrixError.MissMatchShape;
+            }
+
+            const result = self.allocator.alloc(T, self.rows * mat.cols) catch return MatrixError.FailAlloc;
+
+            const ctx = backend.GetInstance();
+            matrix_mul(ctx.context, self.values.ptr, mat.values.ptr, result.ptr, self.rows, self.cols, mat.rows, mat.cols);
+
+            self.allocator.free(self.values);
+            self.values = result;
         }
     };
 }

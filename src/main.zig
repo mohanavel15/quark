@@ -1,6 +1,5 @@
 const std = @import("std");
 const Matrix = @import("matrix.zig").Matrix;
-const MatrixOps = @import("matrix_ops.zig");
 const Backend = @import("backend.zig");
 
 pub fn main() !void {
@@ -32,19 +31,18 @@ pub fn main() !void {
     b.fill(5);
     b.print();
 
-    var c = try MatrixOps.Add(allocator, a, b);
-    defer c.deinit();
-    c.print();
+    try a.add(&b);
+    a.print();
+    a.fill(1);
 
-    var d = try MatrixOps.Subtract(allocator, a, b);
-    defer d.deinit();
-    d.print();
+    try a.subtract(&b);
+    a.print();
+    a.fill(1);
 
-    var e = try MatrixOps.Multiply(allocator, a, b);
-    defer e.deinit();
-    e.print();
+    try a.multiply(&b);
+    a.print();
+    a.fill(1);
 
-    var f = try MatrixOps.Scale(allocator, a, 20);
-    defer f.deinit();
-    f.print();
+    a.scale(20);
+    a.print();
 }
