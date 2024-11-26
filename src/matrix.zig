@@ -34,6 +34,24 @@ pub fn Matrix(comptime T: type) type {
             return self;
         }
 
+        pub fn initRandom(allocator: Allocator, rows: u32, cols: u32) MatrixError!Self {
+            const self = Self{
+                .rows = rows,
+                .cols = cols,
+                .allocator = allocator,
+                .values = allocator.alloc(T, rows * cols) catch return MatrixError.FailAlloc,
+            };
+
+            var prng = std.rand.DefaultPrng.init(2423432);
+            var random = prng.random();
+
+            for (0..(rows * cols)) |idx| {
+                self.values[idx] = random.float(T);
+            }
+
+            return self;
+        }
+
         pub fn deinit(self: *Self) void {
             self.allocator.free(self.values);
         }
@@ -44,7 +62,7 @@ pub fn Matrix(comptime T: type) type {
                 if (i != 0 and i % self.cols == 0) {
                     std.debug.print("|\n| ", .{});
                 }
-                std.debug.print("{d:4.1}", .{v});
+                std.debug.print("{d:4.1} ", .{v});
             }
             std.debug.print("|\n\n", .{});
         }
@@ -107,6 +125,7 @@ pub fn Matrix(comptime T: type) type {
 
             self.allocator.free(self.values);
             self.values = result;
+            self.cols = mat.cols;
         }
     };
 }
