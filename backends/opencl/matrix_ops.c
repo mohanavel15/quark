@@ -191,3 +191,34 @@ void sigmoid(void* context, float* a, unsigned int n) {
     clReleaseProgram(program);
     clReleaseMemObject(bufferA);
 }
+
+const char* cl_relu = "\
+__kernel void relu(__global float *a) { \
+    int i = get_global_id(0); \
+    a[i] = (a[i] - fabsf(a[i])) / 2; \
+}";
+
+void relu(void* context, float* a, unsigned int n) {
+    Context* ctx = (Context*)context;
+    int bytes_len = n * sizeof(float);
+
+    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_WRITE, bytes_len, NULL, NULL);
+
+    clEnqueueWriteBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
+
+    cl_program program = clCreateProgramWithSource(ctx->context, 1, &cl_sigmoid, NULL, NULL);
+    clBuildProgram(program, 1, &ctx->device, NULL, NULL, NULL);
+
+    cl_kernel kernel = clCreateKernel(program, "relu", NULL);
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
+
+    size_t globalSize = n;
+    clEnqueueNDRangeKernel(ctx->queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
+
+    clEnqueueReadBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
+
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseMemObject(bufferA);
+}

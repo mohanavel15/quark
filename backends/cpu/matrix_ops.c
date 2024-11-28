@@ -36,3 +36,9 @@ void sigmoid(void* context, float* a, unsigned int n) {
         a[i] = 1.0 / (1.0 + expf(a[i]));
     }
 }
+
+void relu(void* context, float* a, unsigned int n) {
+    for (int i = 0; i < n; i++) {
+        a[i] = (a[i] - fabsf(a[i])) / 2;
+    }
+}
