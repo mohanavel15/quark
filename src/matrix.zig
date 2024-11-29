@@ -7,6 +7,9 @@ extern fn matrix_sub(context: *anyopaque, a: [*]const f32, b: [*]const f32, n: c
 extern fn matrix_mul(context: *anyopaque, a: [*]const f32, b: [*]const f32, c: [*]const f32, a_rows: c_uint, a_cols: c_uint, b_rows: c_uint, b_cols: c_uint) void;
 extern fn matrix_scale(context: *anyopaque, scale: f32, a: [*]const f32, n: c_uint) void;
 
+extern fn f_sigmoid(context: *anyopaque, a: [*]const f32, n: c_uint) void;
+extern fn f_relu(context: *anyopaque, a: [*]const f32, n: c_uint) void;
+
 pub const MatrixError = error{
     FailAlloc,
     MissMatchShape,
@@ -126,6 +129,16 @@ pub fn Matrix(comptime T: type) type {
             self.allocator.free(self.values);
             self.values = result;
             self.cols = mat.cols;
+        }
+
+        pub fn sigmoid(self: *Self) void {
+            const ctx = backend.GetInstance();
+            f_sigmoid(ctx.context, self.values.ptr, @intCast(self.size()));
+        }
+
+        pub fn relu(self: *Self) void {
+            const ctx = backend.GetInstance();
+            f_relu(ctx.context, self.values.ptr, @intCast(self.size()));
         }
     };
 }

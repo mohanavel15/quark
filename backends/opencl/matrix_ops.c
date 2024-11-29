@@ -164,10 +164,10 @@ void matrix_scale(void* context, float scale, float* a, unsigned int n) {
 const char* cl_sigmoid = "\
 __kernel void sigmoid(__global float *a) { \
     int i = get_global_id(0); \
-    a[i] = 1.0 / (1.0 + expf(a[i])); \
+    a[i] = 1.0 / (1.0 + exp(-a[i])); \
 }";
 
-void sigmoid(void* context, float* a, unsigned int n) {
+void f_sigmoid(void* context, float* a, unsigned int n) {
     Context* ctx = (Context*)context;
     int bytes_len = n * sizeof(float);
 
@@ -195,10 +195,10 @@ void sigmoid(void* context, float* a, unsigned int n) {
 const char* cl_relu = "\
 __kernel void relu(__global float *a) { \
     int i = get_global_id(0); \
-    a[i] = (a[i] - fabsf(a[i])) / 2; \
+    a[i] = (a[i] + fabs(a[i])) / 2; \
 }";
 
-void relu(void* context, float* a, unsigned int n) {
+void f_relu(void* context, float* a, unsigned int n) {
     Context* ctx = (Context*)context;
     int bytes_len = n * sizeof(float);
 
