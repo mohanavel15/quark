@@ -42,3 +42,24 @@ void f_relu(void* context, float* a, unsigned int n) {
         a[i] = (a[i] + fabsf(a[i])) / 2;
     }
 }
+
+void f_softmax(void* context, float* a, unsigned int n) {
+    float sum = 0;
+
+    for (int i = 0; i < n; i++) {
+        a[i] = expf(a[i]);
+        sum +=  a[i];
+    }
+
+    for (int i = 0; i < n; i++) {
+        a[i] /= sum;
+    }
+}
+
+void f_tanh(void* context, float* a, unsigned int n) {
+    for (int i = 0; i < n; i++) {
+        float ei = expf(a[i]);
+        float nei = expf(-a[i]);
+        a[i] = (ei - nei) / (ei + nei);
+    }
+}
