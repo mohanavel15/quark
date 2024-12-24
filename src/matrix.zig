@@ -9,6 +9,8 @@ extern fn matrix_scale(context: *anyopaque, scale: f32, a: [*]const f32, n: c_ui
 
 extern fn f_sigmoid(context: *anyopaque, a: [*]const f32, n: c_uint) void;
 extern fn f_relu(context: *anyopaque, a: [*]const f32, n: c_uint) void;
+extern fn f_softmax(context: *anyopaque, a: [*]const f32, n: c_uint) void;
+extern fn f_tanh(context: *anyopaque, a: [*]const f32, n: c_uint) void;
 
 pub const MatrixError = error{
     FailAlloc,
@@ -65,7 +67,7 @@ pub fn Matrix(comptime T: type) type {
                 if (i != 0 and i % self.cols == 0) {
                     std.debug.print("|\n| ", .{});
                 }
-                std.debug.print("{d:4.1} ", .{v});
+                std.debug.print("{d:7.4} ", .{v});
             }
             std.debug.print("|\n\n", .{});
         }
@@ -139,6 +141,16 @@ pub fn Matrix(comptime T: type) type {
         pub fn relu(self: *Self) void {
             const ctx = backend.GetInstance();
             f_relu(ctx.context, self.values.ptr, @intCast(self.size()));
+        }
+
+        pub fn softmax(self: *Self) void {
+            const ctx = backend.GetInstance();
+            f_softmax(ctx.context, self.values.ptr, @intCast(self.size()));
+        }
+
+        pub fn tanh(self: *Self) void {
+            const ctx = backend.GetInstance();
+            f_tanh(ctx.context, self.values.ptr, @intCast(self.size()));
         }
     };
 }
