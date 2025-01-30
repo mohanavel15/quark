@@ -6,15 +6,6 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // const lib = b.addStaticLibrary(.{
-    //     .name = "quark",
-    //     .root_source_file = b.path("src/root.zig"),
-    //     .target = target,
-    //     .optimize = optimize,
-    // });
-
-    // b.installArtifact(lib);
-
     const exe = b.addExecutable(.{
         .name = "quark",
         .root_source_file = b.path("src/main.zig"),
@@ -22,13 +13,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    exe.linkLibC();
+
     if (opencl) {
-        exe.linkLibC(); // Seems to need it.
         exe.linkSystemLibrary("OpenCL");
         exe.addIncludePath(b.path("backends/opencl/backend.h"));
         exe.addCSourceFile(.{ .file = b.path("backends/opencl/matrix_ops.c"), .flags = &.{} });
     } else {
-        exe.linkLibC();
         exe.addIncludePath(b.path("backends/cpu/backend.h"));
         exe.addCSourceFile(.{ .file = b.path("backends/cpu/matrix_ops.c"), .flags = &.{} });
     }

@@ -1,12 +1,10 @@
 #define CL_TARGET_OPENCL_VERSION 300
 
 #include <CL/cl.h>
+#include <math.h>
+#include <stdio.h>
 
 #include "backend.h"
-
-/*
-Following code is not great and can be improved.
-*/
 
 const char* cl_matrix_add = "\
 __kernel void add(__global float *a, __global const float *b) { \
@@ -206,10 +204,57 @@ void f_relu(void* context, float* a, unsigned int n) {
 
     clEnqueueWriteBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
 
-    cl_program program = clCreateProgramWithSource(ctx->context, 1, &cl_sigmoid, NULL, NULL);
+    cl_program program = clCreateProgramWithSource(ctx->context, 1, &cl_relu, NULL, NULL);
     clBuildProgram(program, 1, &ctx->device, NULL, NULL, NULL);
 
     cl_kernel kernel = clCreateKernel(program, "relu", NULL);
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
+
+    size_t globalSize = n;
+    clEnqueueNDRangeKernel(ctx->queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);
+
+    clEnqueueReadBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
+
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseMemObject(bufferA);
+}
+
+void f_softmax(void* context, float* a, unsigned int n) {
+    printf("Softmax is not computed parallely\n");
+
+    float sum = 0;
+
+    for (int i = 0; i < n; i++) {
+        a[i] = expf(a[i]);
+        sum +=  a[i];
+    }
+
+    for (int i = 0; i < n; i++) {
+        a[i] /= sum;
+    }
+}
+
+const char* cl_tanh = "\
+__kernel void tanh(__global float *a) { \
+    int i = get_global_id(0); \
+    float ei = exp(a[i]); \
+    float nei = exp(-a[i]); \
+    a[i] = (ei - nei) / (ei + nei); \
+}";
+
+void f_tanh(void* context, float* a, unsigned int n) {
+    Context* ctx = (Context*)context;
+    int bytes_len = n * sizeof(float);
+
+    cl_mem bufferA = clCreateBuffer(ctx->context, CL_MEM_READ_WRITE, bytes_len, NULL, NULL);
+    clEnqueueWriteBuffer(ctx->queue, bufferA, CL_TRUE, 0, bytes_len, a, 0, NULL, NULL);
+
+    cl_program program = clCreateProgramWithSource(ctx->context, 1, &cl_tanh, NULL, NULL);
+    clBuildProgram(program, 1, &ctx->device, NULL, NULL, NULL);
+
+    cl_kernel kernel = clCreateKernel(program, "tanh", NULL);
 
     clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
 
