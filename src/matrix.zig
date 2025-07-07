@@ -1,16 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const backend = @import("backend.zig");
-
-extern fn matrix_add(context: *anyopaque, a: [*]const f32, b: [*]const f32, n: c_uint) void;
-extern fn matrix_sub(context: *anyopaque, a: [*]const f32, b: [*]const f32, n: c_uint) void;
-extern fn matrix_mul(context: *anyopaque, a: [*]const f32, b: [*]const f32, c: [*]const f32, a_rows: c_uint, a_cols: c_uint, b_rows: c_uint, b_cols: c_uint) void;
-extern fn matrix_scale(context: *anyopaque, scale: f32, a: [*]const f32, n: c_uint) void;
-
-extern fn f_sigmoid(context: *anyopaque, a: [*]const f32, n: c_uint) void;
-extern fn f_relu(context: *anyopaque, a: [*]const f32, n: c_uint) void;
-extern fn f_softmax(context: *anyopaque, a: [*]const f32, n: c_uint) void;
-extern fn f_tanh(context: *anyopaque, a: [*]const f32, n: c_uint) void;
+const math = std.math;
 
 pub const MatrixError = error{
     FailAlloc,
@@ -21,12 +11,12 @@ pub fn Matrix(comptime T: type) type {
     return struct {
         const Self = @This();
 
-        rows: u32,
-        cols: u32,
+        rows: usize,
+        cols: usize,
         allocator: Allocator,
         values: []T,
 
-        pub fn init(allocator: Allocator, rows: u32, cols: u32) MatrixError!Self {
+        pub fn init(allocator: Allocator, rows: usize, cols: usize) MatrixError!Self {
             const self = Self{
                 .rows = rows,
                 .cols = cols,
@@ -39,23 +29,23 @@ pub fn Matrix(comptime T: type) type {
             return self;
         }
 
-        pub fn initRandom(allocator: Allocator, rows: u32, cols: u32) MatrixError!Self {
-            const self = Self{
-                .rows = rows,
-                .cols = cols,
-                .allocator = allocator,
-                .values = allocator.alloc(T, rows * cols) catch return MatrixError.FailAlloc,
-            };
+        // pub fn initRandom(allocator: Allocator, rows: u32, cols: u32) MatrixError!Self {
+        //     const self = Self{
+        //         .rows = rows,
+        //         .cols = cols,
+        //         .allocator = allocator,
+        //         .values = allocator.alloc(T, rows * cols) catch return MatrixError.FailAlloc,
+        //     };
 
-            var prng = std.rand.DefaultPrng.init(2423432);
-            var random = prng.random();
+        //     var prng = std.rand.DefaultPrng.init(2423432);
+        //     var random = prng.random();
 
-            for (0..(rows * cols)) |idx| {
-                self.values[idx] = random.float(T);
-            }
+        //     for (0..(rows * cols)) |idx| {
+        //         self.values[idx] = random.float(T);
+        //     }
 
-            return self;
-        }
+        //     return self;
+        // }
 
         pub fn deinit(self: *Self) void {
             self.allocator.free(self.values);
@@ -96,8 +86,9 @@ pub fn Matrix(comptime T: type) type {
         }
 
         pub fn scale(self: *Self, scalar: T) void {
-            const ctx = backend.GetInstance();
-            matrix_scale(ctx.context, scalar, self.values.ptr, @intCast(self.size()));
+            for (0..self.size()) |idx| {
+                self.values[idx] *= scalar;
+            }
         }
 
         pub fn add(self: *Self, mat: *Self) !void {
@@ -105,8 +96,9 @@ pub fn Matrix(comptime T: type) type {
                 return MatrixError.MissMatchShape;
             }
 
-            const ctx = backend.GetInstance();
-            matrix_add(ctx.context, self.values.ptr, mat.values.ptr, @intCast(self.size()));
+            for (0..self.size()) |idx| {
+                self.values[idx] += mat.values[idx];
+            }
         }
 
         pub fn subtract(self: *Self, mat: *Self) !void {
@@ -114,8 +106,9 @@ pub fn Matrix(comptime T: type) type {
                 return MatrixError.MissMatchShape;
             }
 
-            const ctx = backend.GetInstance();
-            matrix_sub(ctx.context, self.values.ptr, mat.values.ptr, @intCast(self.size()));
+            for (0..self.size()) |idx| {
+                self.values[idx] -= mat.values[idx];
+            }
         }
 
         pub fn multiply(self: *Self, mat: *Self) !void {
@@ -124,9 +117,15 @@ pub fn Matrix(comptime T: type) type {
             }
 
             const result = self.allocator.alloc(T, self.rows * mat.cols) catch return MatrixError.FailAlloc;
+            @memset(result, 0);
 
-            const ctx = backend.GetInstance();
-            matrix_mul(ctx.context, self.values.ptr, mat.values.ptr, result.ptr, self.rows, self.cols, mat.rows, mat.cols);
+            for (0..self.rows) |i| {
+                for (0..mat.cols) |j| {
+                    for (0..self.cols) |k| {
+                        result[mat.cols * i + j] += self.values[self.cols * i + k] * mat.values[mat.cols * k + j];
+                    }
+                }
+            }
 
             self.allocator.free(self.values);
             self.values = result;
@@ -134,23 +133,34 @@ pub fn Matrix(comptime T: type) type {
         }
 
         pub fn sigmoid(self: *Self) void {
-            const ctx = backend.GetInstance();
-            f_sigmoid(ctx.context, self.values.ptr, @intCast(self.size()));
+            for (0..self.size()) |idx| {
+                self.values[idx] = 1 / (1 + math.exp(-self.values[idx]));
+            }
         }
 
         pub fn relu(self: *Self) void {
-            const ctx = backend.GetInstance();
-            f_relu(ctx.context, self.values.ptr, @intCast(self.size()));
+            for (0..self.size()) |idx| {
+                self.values[idx] = (self.values[idx] + @abs(self.values[idx])) / 2;
+            }
         }
 
         pub fn softmax(self: *Self) void {
-            const ctx = backend.GetInstance();
-            f_softmax(ctx.context, self.values.ptr, @intCast(self.size()));
+            var sum: T = 0;
+            for (0..self.size()) |idx| {
+                sum += math.exp(self.values[idx]);
+            }
+
+            for (0..self.size()) |idx| {
+                self.values[idx] /= sum;
+            }
         }
 
         pub fn tanh(self: *Self) void {
-            const ctx = backend.GetInstance();
-            f_tanh(ctx.context, self.values.ptr, @intCast(self.size()));
+            for (0..self.size()) |idx| {
+                const ei = math.exp(self.values[idx]);
+                const nei = math.exp(-self.values[idx]);
+                self.values[idx] = (ei - nei) / (ei + nei);
+            }
         }
     };
 }

@@ -1,8 +1,6 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
-    const opencl = b.option(bool, "opencl", "Matrix ops opencl backend") orelse false;
-
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -12,17 +10,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
-    exe.linkLibC();
-
-    if (opencl) {
-        exe.linkSystemLibrary("OpenCL");
-        exe.addIncludePath(b.path("backends/opencl/backend.h"));
-        exe.addCSourceFile(.{ .file = b.path("backends/opencl/matrix_ops.c"), .flags = &.{} });
-    } else {
-        exe.addIncludePath(b.path("backends/cpu/backend.h"));
-        exe.addCSourceFile(.{ .file = b.path("backends/cpu/matrix_ops.c"), .flags = &.{} });
-    }
 
     b.installArtifact(exe);
 
