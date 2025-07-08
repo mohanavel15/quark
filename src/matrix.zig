@@ -2,6 +2,21 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const math = std.math;
 
+var rng: std.Random.DefaultPrng = undefined;
+var rng_init: bool = false;
+
+pub fn getRng() *std.Random.DefaultPrng {
+    if (rng_init) return &rng;
+
+    rng = std.Random.DefaultPrng.init(blk: {
+        var seed: u64 = undefined;
+        std.posix.getrandom(std.mem.asBytes(&seed)) catch unreachable;
+        break :blk seed;
+    });
+
+    return &rng;
+}
+
 pub const MatrixError = error{
     FailAlloc,
     MissMatchShape,
@@ -29,23 +44,22 @@ pub fn Matrix(comptime T: type) type {
             return self;
         }
 
-        // pub fn initRandom(allocator: Allocator, rows: u32, cols: u32) MatrixError!Self {
-        //     const self = Self{
-        //         .rows = rows,
-        //         .cols = cols,
-        //         .allocator = allocator,
-        //         .values = allocator.alloc(T, rows * cols) catch return MatrixError.FailAlloc,
-        //     };
+        pub fn initRandom(allocator: Allocator, rows: u32, cols: u32) MatrixError!Self {
+            const self = Self{
+                .rows = rows,
+                .cols = cols,
+                .allocator = allocator,
+                .values = allocator.alloc(T, rows * cols) catch return MatrixError.FailAlloc,
+            };
 
-        //     var prng = std.rand.DefaultPrng.init(2423432);
-        //     var random = prng.random();
+            var random = getRng().random();
 
-        //     for (0..(rows * cols)) |idx| {
-        //         self.values[idx] = random.float(T);
-        //     }
+            for (0..(rows * cols)) |idx| {
+                self.values[idx] = random.float(T);
+            }
 
-        //     return self;
-        // }
+            return self;
+        }
 
         pub fn deinit(self: *Self) void {
             self.allocator.free(self.values);
@@ -147,7 +161,8 @@ pub fn Matrix(comptime T: type) type {
         pub fn softmax(self: *Self) void {
             var sum: T = 0;
             for (0..self.size()) |idx| {
-                sum += math.exp(self.values[idx]);
+                self.values[idx] = math.exp(self.values[idx]);
+                sum += self.values[idx];
             }
 
             for (0..self.size()) |idx| {
