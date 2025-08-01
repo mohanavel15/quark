@@ -145,37 +145,5 @@ pub fn Matrix(comptime T: type) type {
             self.values = result;
             self.cols = mat.cols;
         }
-
-        pub fn sigmoid(self: *Self) void {
-            for (0..self.size()) |idx| {
-                self.values[idx] = 1 / (1 + math.exp(-self.values[idx]));
-            }
-        }
-
-        pub fn relu(self: *Self) void {
-            for (0..self.size()) |idx| {
-                self.values[idx] = (self.values[idx] + @abs(self.values[idx])) / 2;
-            }
-        }
-
-        pub fn softmax(self: *Self) void {
-            var sum: T = 0;
-            for (0..self.size()) |idx| {
-                self.values[idx] = math.exp(self.values[idx]);
-                sum += self.values[idx];
-            }
-
-            for (0..self.size()) |idx| {
-                self.values[idx] /= sum;
-            }
-        }
-
-        pub fn tanh(self: *Self) void {
-            for (0..self.size()) |idx| {
-                const ei = math.exp(self.values[idx]);
-                const nei = math.exp(-self.values[idx]);
-                self.values[idx] = (ei - nei) / (ei + nei);
-            }
-        }
     };
 }

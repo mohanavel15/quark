@@ -2,8 +2,9 @@ const std = @import("std");
 
 const Allocator = std.mem.Allocator;
 const Matrix = @import("matrix.zig").Matrix;
+const Activation = @import("activation.zig").Activation;
 
-pub fn Dense(T: type, inputs: usize, outputs: usize) type {
+pub fn Dense(T: type, inputs: usize, outputs: usize, activation: Activation(T)) type {
     return struct {
         const Self = @This();
 
@@ -27,6 +28,7 @@ pub fn Dense(T: type, inputs: usize, outputs: usize) type {
         pub fn forward(self: *Self, mat: *Matrix(T)) !*Matrix(T) {
             try mat.multiply(&self.weights);
             try mat.add(&self.biases);
+            activation.forward(T, mat.values);
             return mat;
         }
     };
