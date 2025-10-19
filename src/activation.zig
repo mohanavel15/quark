@@ -99,3 +99,21 @@ pub fn softmax(T: type) Activation(T) {
         .backward = Softmax.backward,
     };
 }
+
+const GeLU = struct {
+    pub fn forward(T: type, values: []T) void {
+        for (0..values.len) |idx| {
+            const x = values[idx];
+            values[idx] = 0.5 * x * (1 + Tanh.forward(T, std.math.sqrt(2 / std.math.pi) * (x + 0.044715 * std.math.pow(T, x, 3))));
+        }
+    }
+
+    pub fn backward(T: type, _: []T) void {}
+};
+
+pub fn gelu(T: type) Activation(T) {
+    return Activation(T){
+        .forward = GeLU.forward,
+        .backward = GeLU.backward,
+    };
+}
