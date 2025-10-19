@@ -125,7 +125,17 @@ pub fn Matrix(comptime T: type) type {
             }
         }
 
-        pub fn multiply(self: *Self, mat: *Self) !void {
+        pub fn elem_mul(self: *Self, mat: *Self) !void {
+            if (self.rows != mat.rows or self.cols != mat.cols) {
+                return MatrixError.MissMatchShape;
+            }
+
+            for (0..self.size()) |idx| {
+                self.values[idx] *= mat.values[idx];
+            }
+        }
+
+        pub fn mat_mul(self: *Self, mat: *Self) !void {
             if (self.cols != mat.rows) {
                 return MatrixError.MissMatchShape;
             }
